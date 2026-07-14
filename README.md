@@ -68,6 +68,10 @@ pentest-reporter, security-consultant, audit-reviewer)가 `_workspace/00_input.m
 
 ## 탐지 방법론
 
+![screen1](data/screen1.png)
+
+![screen2](data/screen2.png)
+
 `candidate_scanner.py`는 같은 (측정항목, 기기모델) 그룹 안에서 각 사업장의 피처 분포를
 다른 사업장들과 robust z-score로 비교해 분리도(`sep_l2`)와 배타우위(`excl_margin`,
 "평범한 사업장들 대비 몇 배나 더 떨어졌는가")를 계산하고, 이 값이 여러 달 반복적으로

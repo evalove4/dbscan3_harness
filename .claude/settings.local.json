@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest -q)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(.venv/Scripts/python -m pytest -v)",
+      "Bash(.venv/Scripts/python scripts/run_manual.py --item TON00 --item TOC00 --item TOP00 --sdate 2026-02-01 --edate 2026-06-30 --no-llm)"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{% set status_class = "bad" if r.status == "확정" and r.verdict == "Y" else ("ok" if r.status == "확정" and r.verdict == "N" else "pending") %}
+<article class="card {{ status_class }}">
+  <h3>{{ r.fact_name }} <small>({{ r.model_name }}, {{ r.group }}, {{ r.item_code }})</small></h3>
+  {% if r.reason or r.chart_evidence %}
+  <p>{{ r.reason or r.chart_evidence }}</p>
+  {% endif %}
+  {% if r.status != "확정" %}
+  <p>상태: {{ r.status }}{% if r.issues %} · 지적사항: {{ r.issues | join("; ") }}{% endif %}</p>
+  {% endif %}
+  <p class="meta">
+    {% if r.confidence %}확신도: {{ r.confidence }} · {% endif %}
+    분리도(sep_l2) {{ r.sep_l2_mean }}/{{ r.sep_l2_max }} ·
+    배타우위(excl_margin) {{ r.excl_margin_mean }}/{{ r.excl_margin_max }} ·
+    강한 신호 {{ r.n_months_strong }}/{{ r.n_months_eval }}개월
+    {% if r.error %} · 오류: {{ r.error }}{% endif %}
+  </p>
+  {% if r.candidate_idx is not none %}
+  <button type="button" class="link-btn" onclick="toggleCandidateChart({{ r.candidate_idx }}, '{{ run_id }}')">
+    산포도 보기 / 숨기기
+  </button>
+  <div id="chart-wrap-{{ r.candidate_idx }}" style="display:none; margin-top:0.5rem;">
+    <canvas id="chart-{{ r.candidate_idx }}" width="600" height="280" style="max-width:100%"></canvas>
+  </div>
+  {% endif %}
+</article>

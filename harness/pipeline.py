@@ -51,6 +51,10 @@ def run(items: list[str], sdate: str, edate: str, *, use_llm: bool = True,
         {"fact_name": r["fact_name"], "verdict": r.get("verdict"),
          "confidence": r.get("confidence"), "reason": r.get("reason")} for r in reviewed
     ])
+    # candidate_idx: 01_candidates.json 안에서의 위치. GUI가 산포도 재조회(build_candidate_chart)
+    # 시 어떤 후보인지 식별하는 용도로만 쓴다.
+    for i, r in enumerate(reviewed):
+        r["candidate_idx"] = i
     _dump(ws_dir, "03_reviewed.json", reviewed)
 
     # 04_report — report(확정/정상/보류 3분류)

@@ -368,6 +368,38 @@ def _chart_evidence(item: str, model: str, fact_name: str, wast_no: int,
             f"뭉쳐 있는 계단식 오프셋, 1을 크게 넘으면 자체적으로도 값이 흔들리는 불안정성 이상).")
 
 
+def build_candidate_chart(item: str, model: str, group: str, fact_name: str, wast_no: int,
+                           month: str | None) -> dict | None:
+    """GUI가 후보 하나를 산포도로 보여줄 때 쓰는 좌표 데이터. `_chart_evidence`와 같은
+    (item, model, month) 원본 좌표를 다시 불러오되, 거리 요약 문장 대신 그려서 확인할 수 있는
+    좌표 목록 그대로를 돌려준다."""
+    panel_feats = _panel_feats_for(group)
+    if panel_feats is None or month is None:
+        return None
+    scat = build_scatter(item, model, month)
+    if scat is None:
+        return None
+    px, py = panel_feats
+    site_pts, other_pts = [], []
+    for s in scat["series"]:
+        xs, ys = s["rows"].get(px), s["rows"].get(py)
+        fac, wast = s["rows"].get("사업장"), s["rows"].get("방류구")
+        if xs is None or ys is None or fac is None:
+            continue
+        for x, y, f, w in zip(xs, ys, fac, wast):
+            if x is None or y is None:
+                continue
+            (site_pts if (f == fact_name and w == wast_no) else other_pts).append([x, y])
+    if not site_pts and not other_pts:
+        return None
+    return {
+        "item": item, "model": model, "group": group, "month": month,
+        "fact_name": fact_name, "wast_no": wast_no,
+        "x_label": px, "y_label": py,
+        "site_points": site_pts, "other_points": other_pts,
+    }
+
+
 def find_persistent_anomalies(item: str, sdate: str, edate: str) -> dict:
     """detect_site_outliers()의 월별·그룹별 원행을 사업장 단위로 집계해, [sdate, edate)
     범위에서 평가 가능했던 달 중 최소 2개월(1개월뿐이면 1개월) 이상 "강한" 조건을 반복적으로

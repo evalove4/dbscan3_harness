@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ run_id }} — dbscan3-harness{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('index') }}">&larr; 목록으로</a></p>
+<h1>{{ run_id }}</h1>
+<p>
+  항목: {{ result['items'] | join(", ") }} · 기간: {{ result.sdate }} ~ {{ result.edate }}<br>
+  통계 후보 {{ result.n_candidates }}건 → 확정 이상 {{ result.n_confirmed }}건 /
+  정상 판정 {{ result.n_normal }}건 / 보류 {{ result.n_pending }}건
+</p>
+
+<section class="panel">
+  <h2>종합 분석 차트 — 분리도 × 배타우위</h2>
+  <p class="hint">점선은 "강한" 판정 임계값(분리도 &ge; {{ strong_sep_l2 }}, 배타우위 &ge;
+    {{ strong_excl_margin }})이다. 오른쪽 위로 갈수록 다른 사업장들과 강하게 벌어진 후보다.
+    <span style="color:#c0392b">●</span> 확정 이상 ·
+    <span style="color:#27ae60">●</span> 정상 판정 ·
+    <span style="color:#999">●</span> 보류</p>
+  <canvas id="overview-chart" width="820" height="320" style="max-width:100%"></canvas>
+</section>
+
+<section class="panel">
+  <h2>확정 이상 사업장 <span class="badge bad">{{ result.confirmed | length }}</span></h2>
+  {% if result.confirmed %}
+  {% for r in result.confirmed %}
+  {% include "_candidate_card.html" with context %}
+  {% endfor %}
+  {% else %}
+  <p class="hint">(없음)</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>정상 판정 <span class="badge ok">{{ result.normal | length }}</span></h2>
+  {% if result.normal %}
+  {% for r in result.normal %}
+  {% include "_candidate_card.html" with context %}
+  {% endfor %}
+  {% else %}
+  <p class="hint">(없음)</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>판정 보류/불가 <span class="badge pending">{{ result.pending | length }}</span></h2>
+  {% if result.pending %}
+  {% for r in result.pending %}
+  {% include "_candidate_card.html" with context %}
+  {% endfor %}
+  {% else %}
+  <p class="hint">(없음)</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>산출물 파일 (_workspace)</h2>
+  <ul>
+    {% for f in workspace_files %}
+    <li><a href="{{ url_for('workspace_file', run_id=run_id, filename=f) }}">{{ f }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script>
+  const overviewSeries = [
+    { label: "확정 이상", color: "#c0392b",
+      points: ({{ result.confirmed | tojson }}).map(r => ({ x: r.sep_l2_mean, y: r.excl_margin_mean, name: r.fact_name })) },
+    { label: "정상 판정", color: "#27ae60",
+      points: ({{ result.normal | tojson }}).map(r => ({ x: r.sep_l2_mean, y: r.excl_margin_mean, name: r.fact_name })) },
+    { label: "보류", color: "#999999",
+      points: ({{ result.pending | tojson }}).map(r => ({ x: r.sep_l2_mean, y: r.excl_margin_mean, name: r.fact_name }))
+        .filter(p => p.x !== undefined && p.x !== null && p.y !== undefined && p.y !== null) },
+  ];
+  drawScatterChart("overview-chart", overviewSeries, {
+    xLabel: "분리도(sep_l2_mean)", yLabel: "배타우위(excl_margin_mean)",
+    vLine: {{ strong_sep_l2 }}, hLine: {{ strong_excl_margin }},
+  });
+
+  function toggleCandidateChart(idx, runId) {
+    const wrap = document.getElementById("chart-wrap-" + idx);
+    const canvas = document.getElementById("chart-" + idx);
+    if (wrap.style.display === "none") {
+      wrap.style.display = "block";
+      if (!canvas.dataset.loaded) {
+        fetch(`/runs/${runId}/candidates/${idx}/chart`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.error) {
+              canvas.replaceWith(document.createTextNode(data.error));
+              return;
+            }
+            drawScatterChart(canvas.id, [
+              { label: "다른 사업장", color: "#999999",
+                points: data.other_points.map(p => ({ x: p[0], y: p[1] })) },
+              { label: data.fact_name, color: "#c0392b",
+                points: data.site_points.map(p => ({ x: p[0], y: p[1] })) },
+            ], { xLabel: data.x_label, yLabel: data.y_label });
+            canvas.dataset.loaded = "1";
+          })
+          .catch(() => { canvas.replaceWith(document.createTextNode("차트를 불러오지 못했습니다.")); });
+      }
+    } else {
+      wrap.style.display = "none";
+    }
+  }
+</script>
+{% endblock %}

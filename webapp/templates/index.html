@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}실행 — dbscan3-harness{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>파이프라인 실행</h1>
+  <form method="post" action="{{ url_for('run_route') }}">
+    <fieldset>
+      <legend>항목</legend>
+      {% for item in items %}
+      <label class="chip">
+        <input type="checkbox" name="items" value="{{ item }}" checked>
+        {{ item }}
+      </label>
+      {% endfor %}
+    </fieldset>
+
+    <div class="row">
+      <label>시작일 (sdate)
+        <input type="date" name="sdate" value="{{ default_sdate }}" required>
+      </label>
+      <label>종료일 (edate, 미포함)
+        <input type="date" name="edate" value="{{ default_edate }}" required>
+      </label>
+    </div>
+
+    <label class="chip">
+      <input type="checkbox" name="use_llm" checked>
+      LLM 판정 사용 (해제 시 통계 후보만 확인 — <code>--no-llm</code>과 동일)
+    </label>
+
+    {% if months %}
+    <p class="hint">사용 가능한 샘플 데이터 월: {{ months | join(", ") }}</p>
+    {% else %}
+    <p class="hint warn">data/sample/에 샘플 parquet 파일이 없습니다. README의 안내대로
+      <code>scripts/generate_synthetic_sample.py</code>를 먼저 실행하세요.</p>
+    {% endif %}
+
+    <button type="submit">실행</button>
+    <p class="hint">LLM 판정을 켠 경우 vLLM 엔드포인트 응답을 기다리는 동안 페이지가
+      멈춰 있을 수 있습니다(동기 실행). LLM에 접속할 수 없어도 파이프라인은 예외 없이
+      완주하며 후보는 "판정불가"로 남습니다.</p>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>이전 실행 결과</h2>
+  {% if runs %}
+  <table>
+    <thead>
+      <tr><th>실행 ID</th><th>항목</th><th>기간</th><th>후보</th><th>확정</th><th>정상</th><th>보류</th></tr>
+    </thead>
+    <tbody>
+      {% for r in runs %}
+      <tr>
+        <td><a href="{{ url_for('run_detail', run_id=r.run_id) }}">{{ r.run_id }}</a></td>
+        <td>{{ r['items'] | join(", ") }}</td>
+        <td>{{ r.sdate }} ~ {{ r.edate }}</td>
+        <td>{{ r.n_candidates }}</td>
+        <td>{{ r.n_confirmed }}</td>
+        <td>{{ r.n_normal }}</td>
+        <td>{{ r.n_pending }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hint">아직 실행 결과가 없습니다.</p>
+  {% endif %}
+</section>
+{% endblock %}

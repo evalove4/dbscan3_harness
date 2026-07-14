@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }} — {{ run_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('run_detail', run_id=run_id) }}">&larr; {{ run_id }}</a></p>
+<h1>{{ filename }}</h1>
+<pre class="code">{{ content }}</pre>
+{% endblock %}

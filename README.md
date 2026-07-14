@@ -160,6 +160,44 @@ python scripts/run_manual.py --item TON00 --item TOC00 --item TOP00 \
 python scripts/run_manual.py --item TON00 --sdate 2026-02-01 --edate 2026-06-30 --no-llm
 ```
 
+```
+[01_candidates] 2건
+통계 후보 2건 -> 확정 이상 0건 / 정상 판정 0건 / 보류 2건
+[04_report] outputs/2026-02-01_2026-06-30_TON00/04_report.json
+[04_report] outputs/2026-02-01_2026-06-30_TON00/04_report.md
+```
+
+후보 2건(가상사업장 G, H)이 `status=판정생략(--no-llm)`으로 보류로 남는다. LLM 없이도
+후보 목록(01_candidates.json)까지는 산출된다.
+
+### GUI로 실행(웹 화면)
+
+CLI 대신 브라우저에서 항목·기간을 선택해 실행하고, 결과 리포트와 산출물 파일
+(`00_input.json` ~ `03_reviewed.json`)을 웹 화면에서 바로 볼 수 있다. Flask 기반이며
+`harness/pipeline.py`의 `run()`을 그대로 호출할 뿐 별도 로직은 없다.
+
+```bash
+pip install -r requirements.txt   # flask 포함
+python scripts/run_web.py         # http://127.0.0.1:5000
+# python scripts/run_web.py --host 0.0.0.0 --port 8080 --no-debug
+```
+
+`/`에서 항목 체크박스·기간·LLM 판정 여부를 선택해 실행하면 `outputs/<run_id>/`가 그대로
+생성되고 `/runs/<run_id>`에서 확정 이상/정상 판정/보류 3분류와 원본 판정 근거를 볼 수
+있다. LLM 판정을 켠 경우 vLLM 응답을 기다리는 동안 요청이 동기적으로 블로킹된다(로컬
+데모 용도이며 다중 사용자 동시 실행을 고려하지 않는다).
+
+결과 화면에는 두 종류 차트가 있다(외부 차트 라이브러리 없이 `webapp/static/charts.js`의
+캔버스 2D 렌더링만 사용 — 오프라인 환경에서도 동작한다).
+
+- **종합 분석 차트** — 후보 전체를 분리도(sep_l2_mean) × 배타우위(excl_margin_mean)
+  산포도로 한눈에 보여준다. 점선은 "강한" 판정 임계값(`config.STRONG_SEP_L2`,
+  `config.STRONG_EXCL_MARGIN`)이고, 색은 확정 이상/정상 판정/보류를 구분한다.
+- **후보별 산포도** — 각 카드의 "산포도 보기"를 누르면 `candidate_scanner.build_candidate_chart`
+  (기존 `_chart_evidence`가 쓰는 것과 같은 원본 좌표)를 `/runs/<run_id>/candidates/<idx>/chart`
+  에서 불러와, 해당 사업장 점(빨강)과 같은 그룹 내 다른 사업장 점(회색)을 실제 피처
+  평면(예: `mtm2_1_scaled × mtm2_2_scaled`) 위에 그려 이격 정도를 시각적으로 재확인시켜준다.
+
 ### 자동 실행(예시)
 
 매일 09:00에 3개 항목 × 기간 D-31~D-1로 실행하는 예시다. **이 스크립트 자체는
@@ -211,7 +249,12 @@ dbscan3-harness/
 ├── scripts/
 │   ├── generate_synthetic_sample.py
 │   ├── run_manual.py
-│   └── run_scheduler_example.py
+│   ├── run_scheduler_example.py
+│   └── run_web.py            # GUI 서버 실행 진입점
+├── webapp/                   # Flask GUI — pipeline.run()을 브라우저에서 실행/조회
+│   ├── app.py
+│   ├── templates/
+│   └── static/
 ├── outputs/                  # 실행 산출물(gitignore 대상)
 └── tests/
 ```

@@ -68,10 +68,6 @@ pentest-reporter, security-consultant, audit-reviewer)가 `_workspace/00_input.m
 
 ## 탐지 방법론
 
-![screen1](data/screen1.png)
-
-![screen2](data/screen2.png)
-
 `candidate_scanner.py`는 같은 (측정항목, 기기모델) 그룹 안에서 각 사업장의 피처 분포를
 다른 사업장들과 robust z-score로 비교해 분리도(`sep_l2`)와 배타우위(`excl_margin`,
 "평범한 사업장들 대비 몇 배나 더 떨어졌는가")를 계산하고, 이 값이 여러 달 반복적으로
@@ -175,6 +171,11 @@ python scripts/run_manual.py --item TON00 --sdate 2026-02-01 --edate 2026-06-30 
 후보 목록(01_candidates.json)까지는 산출된다.
 
 ### GUI로 실행(웹 화면)
+
+![screen1](data/screen1.png)
+
+![screen2](data/screen2.png)
+
 
 CLI 대신 브라우저에서 항목·기간을 선택해 실행하고, 결과 리포트와 산출물 파일
 (`00_input.json` ~ `03_reviewed.json`)을 웹 화면에서 바로 볼 수 있다. Flask 기반이며
